@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Chat</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+        }
+        #messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid var(--vscode-editorGroup-border);
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: var(--vscode-editorWidget-background);
+        }
+        .message {
+            margin-bottom: 8px;
+        }
+        .message.user {
+            text-align: right;
+            color: var(--vscode-terminal-ansiGreen);
+        }
+        .message.ai {
+            text-align: left;
+            color: var(--vscode-terminal-ansiBlue);
+        }
+        #input-container {
+            display: flex;
+        }
+        #chat-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid var(--vscode-input-border);
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+        }
+        #send-button {
+            padding: 8px 15px;
+            margin-left: 10px;
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            cursor: pointer;
+        }
+        #send-button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+    </style>
+</head>
+<body>
+    <div id="messages"></div>
+    <div id="input-container">
+        <input type="text" id="chat-input" placeholder="Type your message...">
+        <button id="send-button">Send</button>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        const messagesDiv = document.getElementById('messages');
+
+        sendButton.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (message) {
+                addMessage(message, 'user');
+                vscode.postMessage({
+                    command: 'prompt',
+                    text: message
+                });
+                chatInput.value = '';
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender);
+            messageElement.textContent = text;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
+        }
+
+        window.addEventListener('message', event => {
+            const message = event.data; // The JSON data from the extension
+            switch (message.command) {
+                case 'response':
+                    addMessage(message.text, 'ai');
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
